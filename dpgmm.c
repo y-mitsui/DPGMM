@@ -66,8 +66,12 @@ double *dpgmm_getDM(DPGMM *ctx){
 	return ctx->data;
 }
 void dpgmm_solv(DPGMM *ctx){
+	gsl_matrix *newZ;
 	double *dm=dpgmm_getDM(ctx);
 	
+	if(ctx->z==NULL || ctx->z->size1<ctx->numData){
+		newZ=gsl_matrix_alloc(ctx->numData,ctx->stickCap);
+	}
 }
 void train(double *x,int numSample){
 	int i;
