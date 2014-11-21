@@ -1,5 +1,13 @@
 #include "dpgmm.h"
 
+double gsl_vector_sum(gsl_vector *v){
+	int i;
+	double r=0.0;
+	for(i=0;i<v->size;i++){
+		r+=gsl_vector_get(v,i);
+	}
+	return r;
+}
 gsl_vector *gsl_vector_clone(gsl_vector *src){
 	gsl_vector *r=gsl_vector_alloc(src->size);
 	gsl_vector_memcpy(r,src);

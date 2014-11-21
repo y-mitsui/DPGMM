@@ -68,10 +68,57 @@ double *dpgmm_getDM(DPGMM *ctx){
 void dpgmm_solv(DPGMM *ctx){
 	gsl_matrix *newZ;
 	double *dm=dpgmm_getDM(ctx);
+	double *alpha,*theta,expLogStick,expNegLogStick;
+	int offset,i,j;
 	
 	if(ctx->z==NULL || ctx->z->size1<ctx->numData){
 		newZ=gsl_matrix_alloc(ctx->numData,ctx->stickCap);
+		if(ctx->z==NULL) offset=0;
+		else{
+			offset=ctx->z->size1;
+			gsl_vector *v=gsl_vector_alloc(ctx->z->size2);
+			for(i=0;i<offset;i++){	/*TODO:gsl matrix view*/
+				gsl_matrix_get_row(v,ctx->z,i);
+				gsl_matrix_set_row(newZ,i,v);
+			}
+		}
+		ctx->z=newZ;
+		
+		alpha=malloc(sizeof(double)*ctx->stickCap);
+		theta=malloc(sizeof(double)*ctx->stickCap);
+		for(i=0;i<ctx->stickCap;i++){
+			alpha[i]=32.0;
+		}
+		size_t size=ctx->z->size1-offset;
+		for(i=0;i<size;i++){
+			gsl_rng *r = gsl_rng_alloc (gsl_rng_default);
+			gsl_ran_dirichlet(r,size,alpha,theta);
+			for(j=0;j<ctx->stickCap;j++){
+				gsl_matrix_set(ctx->z,i,j,theta[j]);
+			}
+		}
+
+		gsl_matrix *prev=gsl_matrix_clone(ctx->z);
+		int iters=0;
+		do{
+			gsl_vector_set(ctx->alpha,0,gsl_vector_get(ctx->beta,0)+ctx->stickCap);
+			gsl_vector_set(ctx->alpha,1,gsl_vector_get(ctx->beta,1)-gsl_vector_sum(ctx->vExpNegLog));
+			double alphaRate=gsl_vector_get(ctx->alpha,0)/gsl_vector_get(ctx->alpha,1);
+			expLogStick=-gsl_sf_psi(1.0 + alphaRate);
+			expNegLogStick=expLogStick;
+			expLogStick += gsl_sf_psi(1.0);
+			expNegLogStick +=gsl_sf_psi(alphaRate);
+
+			for(i=0;i<ctx->v->size1;i++){
+				gsl_matrix_set(ctx->v,i,0,1.0);
+				gsl_matrix_set(ctx->v,i,1,alphaRate);
+			}
+			
+			
+		}while(++iters<100);
+		
 	}
+	
 }
 void train(double *x,int numSample){
 	int i;

@@ -59,6 +59,7 @@ gsl_matrix *gsl_matrix_clone(gsl_matrix *src);
 void gsl_matrix_mul_constant(gsl_matrix *a,const double x);
 void gsl_vector_mul_constant(gsl_vector *a,const double x);
 gsl_matrix* gsl_vector_outer(gsl_vector *a,gsl_vector *b);
+double gsl_vector_sum(gsl_vector *v);
 
 
 GaussianPrior *gaussian_prior_init(int dims);
