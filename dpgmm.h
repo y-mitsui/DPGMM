@@ -13,7 +13,7 @@
 #include <string.h>
 
 #define STICK_CAP 1
-#define LIMIT_DATA 10000
+#define LIMIT_DATA 40000
 #define DIMENTION 2
 #define EPS 0.1
 #define NUM_SAMPLE 10
@@ -60,12 +60,15 @@ void gsl_matrix_mul_constant(gsl_matrix *a,const double x);
 void gsl_vector_mul_constant(gsl_vector *a,const double x);
 gsl_matrix* gsl_vector_outer(gsl_vector *a,gsl_vector *b);
 double gsl_vector_sum(gsl_vector *v);
+gsl_vector *gsl_cumsum(gsl_vector *v);
+gsl_vector* gsl_matrix_sum_row(gsl_matrix *m);
 
 
 GaussianPrior *gaussian_prior_init(int dims);
 void gaussian_prior_reset(GaussianPrior *ctx);
 void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *covariance,double* weight);
 StudentT * gaussian_prior_intProb(GaussianPrior *ctx);
+void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp);
 
 StudentT *student_t_init(int dims);
 void student_t_setDOF(StudentT *ctx,double dof);

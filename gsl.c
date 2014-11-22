@@ -1,10 +1,34 @@
 #include "dpgmm.h"
 
+gsl_vector* gsl_matrix_sum_row(gsl_matrix *m){
+	int i,j;
+	gsl_vector* r=gsl_vector_alloc(m->size2);
+	double total;
+	for(i=0;i<m->size2;i++){
+		total=0.0;
+		for(j=0;j<m->size1;j++){
+			total+=gsl_matrix_get(m,j,i);
+		}
+		gsl_vector_set(r,i,total);
+	}
+	return r;
+}
 double gsl_vector_sum(gsl_vector *v){
 	int i;
 	double r=0.0;
 	for(i=0;i<v->size;i++){
 		r+=gsl_vector_get(v,i);
+	}
+	return r;
+}
+gsl_vector *gsl_cumsum(gsl_vector *v){
+	int i,j;
+	gsl_vector *r=gsl_vector_alloc(v->size);
+	gsl_vector_set_zero(r);
+	for(i=0;i<v->size;i++){
+		for(j=0;j<=i;j++){
+			gsl_vector_set(r,i,gsl_vector_get(r,i)+gsl_vector_get(v,i));
+		}
 	}
 	return r;
 }

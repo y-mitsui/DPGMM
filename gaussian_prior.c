@@ -40,7 +40,27 @@ StudentT * gaussian_prior_intProb(GaussianPrior *ctx){
 	student_t_setInvScale(st,lambda);
 	return st;
 }
-
+void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,gsl_vector *weight){
+	int d=ctx->mu->size;
+	double num=gsl_vector_sum(weight);
+	for(i=0;i<d;i++){
+		double mean=gsl_stats_mean(sample,d,num);
+		for(j=0;j<numSample;j++){
+			sample[j*d+i]-=mean;
+		}
+	}
+	
+	
+}
+void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
+	double delta = gp->mu - ctx->mu;
+	ctx->invShape+=gp->invShape;
+	ctx->invShape+=((gp->k*ctx->k)/(gp->k+ctx->k));
+	ctx->shape=NULL;
+	ctx->mu+=(gp->k/(ctx->k+gp->k)) * delta;
+	ctx->n += gp->n;
+	ctx->k += gp->k;
+}
 void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *covariance,double* weight){
 	double weight_const;
 	weight_const=(weight==NULL)  ? (double)ctx->mu->size : *weight;

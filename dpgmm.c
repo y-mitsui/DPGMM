@@ -1,4 +1,5 @@
 #include "dpgmm.h"
+#include <time.h>
 
 DPGMM *dpgmm_init(int dims,int stickCap){
 	int i;
@@ -89,12 +90,17 @@ void dpgmm_solv(DPGMM *ctx){
 		for(i=0;i<ctx->stickCap;i++){
 			alpha[i]=32.0;
 		}
-		size_t size=ctx->z->size1-offset;
-		for(i=0;i<size;i++){
-			gsl_rng *r = gsl_rng_alloc (gsl_rng_default);
-			gsl_ran_dirichlet(r,size,alpha,theta);
-			for(j=0;j<ctx->stickCap;j++){
-				gsl_matrix_set(ctx->z,i,j,theta[j]);
+
+		if(ctx->stickCap==1){
+			gsl_matrix_set_all(ctx->z,1.0);
+		}else{
+			size_t size=ctx->z->size1-offset;
+			for(i=0;i<size;i++){
+				gsl_rng *r = gsl_rng_alloc (gsl_rng_default);
+				gsl_ran_dirichlet(r,ctx->stickCap,alpha,theta);
+				for(j=0;j<ctx->stickCap;j++){
+					gsl_matrix_set(ctx->z,i,j,theta[j]);
+				}
 			}
 		}
 
@@ -113,58 +119,42 @@ void dpgmm_solv(DPGMM *ctx){
 				gsl_matrix_set(ctx->v,i,0,1.0);
 				gsl_matrix_set(ctx->v,i,1,alphaRate);
 			}
-			
-			
-		}while(++iters<100);
+
+			gsl_vector *sums = gsl_matrix_sum_row(ctx->z);
+			gsl_vector *cumsums = gsl_cumsum(sums);
+			for(i=0;i<ctx->v->size1;i++){
+				gsl_matrix_set(ctx->v,i,0,gsl_matrix_get(ctx->v,i,0)+gsl_vector_get(sums,i));
+				gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)+ctx->z->size1);
+				gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)-gsl_vector_get(cumsums,i));
+			}
+
+			for(i=0;i<ctx->v->size1;i++){
+				double total=0.0;
+				for(j=0;j<ctx->v->size1;j++){
+					total+=gsl_matrix_get(ctx->z,i,j);
+				}
+				gsl_vector_set(ctx->vExpLog,i,-gsl_sf_psi(total));
+			}
+			gsl_vector_memcpy(ctx->vExpNegLog,ctx->vExpLog);
+			for(i=0;i<ctx->v->size1;i++){
+				gsl_vector_set(ctx->vExpLog,i,gsl_vector_get(ctx->vExpLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,0)));
+				gsl_vector_set(ctx->vExpNegLog,i,gsl_vector_get(ctx->vExpNegLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,1)));
+			}
+			for(i=0;i<stickCap;i++){
+				gaussian_prior_reset(ctx->n[i]);
+				gaussian_prior_addGP(ctx->n[i],ctx->prior);	
+			}
+		}while(++iters<16);
 		
 	}
 	
-}
-void train(double *x,int numSample){
-	int i;
-	double beta[2]={1.0,1.0};
-	double alpha[2];
-	double vExpNegLog[1]={-1.0};
-	double *newZ=malloc(sizeof(double)*DIMENTION);
-	double *z,diff;
-	double v[2],vExpLog;
-
-	z=newZ;
-	/*gsl_rng *r = gsl_rng_alloc (gsl_rng_default);	
-	z=gsl_ran_dirichlet(r,1);*/
-	for(i=0;i<DIMENTION;i++){
-		z[i]=1.0;
-	}
-	//prev=z;
-	do{
-		alpha[0]=beta[0]+STICK_CAP;
-		alpha[1]=beta[1]-vExpNegLog[0];
-		double expLogStick=-gsl_sf_psi_int(1.0+alpha[0]/alpha[1]);
-		double expNegLogStick = expLogStick;
-		expLogStick += gsl_sf_psi_int(1.0);
-		expNegLogStick += gsl_sf_psi_int(alpha[0]/alpha[1]);
-		v[0]=1.0;
-		v[1]=alpha[0]/alpha[1];
-		double sums=sum(z,1);
-		v[0]+=sums;
-		v[1]+=DIMENTION;
-		double *tmp=cumsum(&sums,1);
-		v[1]=*tmp;
-		vExpLog=-gsl_sf_psi_int(sum(v,2));
-		vExpNegLog[0]= vExpLog;
-		vExpLog+=gsl_sf_psi_int(v[0]);
-		vExpNegLog[0]+= gsl_sf_psi_int(v[1]);
-		for(i=0;i<STICK_CAP;i++){
-			
-		}
-		diff=0.0;
-	}while(diff<EPS);
 }
 /* TODO:double のNULLを定義*/
 int main(void){
 	double sample[2];
 	char buf[128];
 
+	
 	DPGMM *ctx=dpgmm_init(DIMENTION,1);
 	FILE *fp=fopen("data.txt","r");
 	while(fgets(buf,sizeof(buf),fp)){
@@ -172,7 +162,11 @@ int main(void){
 		dpgmm_add(ctx,sample);
 	}
 	fclose(fp);
-	setDefaultsPrior(ctx);
+	
+	clock_t t=clock();
+	setDefaultsPrior(ctx);	
+	dpgmm_solv(ctx);
+	printf("%.10f\n",(double)(clock()-t)/ (double)CLOCKS_PER_SEC);
 	//train(sample,NUM_SAMPLE);
 	return 0;
 }
