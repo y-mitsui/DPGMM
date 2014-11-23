@@ -40,24 +40,66 @@ StudentT * gaussian_prior_intProb(GaussianPrior *ctx){
 	student_t_setInvScale(st,lambda);
 	return st;
 }
-void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,gsl_vector *weight){
-	int d=ctx->mu->size;
-	double num=gsl_vector_sum(weight);
+void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,double *weight){
+	int d=ctx->mu->size,i,j,k;
+	double num=sum(weight,numSample);
+	double *means=malloc(sizeof(double)*d);
+	double *diff=malloc(sizeof(double)*d);
+	double *scatter=malloc(sizeof(double)*d*d);
 	for(i=0;i<d;i++){
-		double mean=gsl_stats_mean(sample,d,num);
-		for(j=0;j<numSample;j++){
-			sample[j*d+i]-=mean;
+		means[i]=gsl_stats_mean(&sample[i],d,numSample);
+	}
+	for(i=0;i<numSample;i++){
+		for(j=0;j<d;j++){
+			diff[j]=sample[i*d+j]-means[j];
+		}
+		for(j=0;j<d;j++){
+			for(k=0;k<d;k++){
+				scatter[j*d+k]+=weight[i]*diff[j]*diff[k];
+			}
 		}
 	}
-	
-	
-}
-void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
-	double delta = gp->mu - ctx->mu;
-	ctx->invShape+=gp->invShape;
-	ctx->invShape+=((gp->k*ctx->k)/(gp->k+ctx->k));
+	/*for(i=0;i<d;i++){
+		for(j=0;j<d;j++){
+			printf("mat[i*d+j]:%lf\n",mat[i*d+j]);
+		}
+	}
+	puts("-------------------");*/
+	gsl_vector *delta=gsl_vector_alloc(d);
+	for(i=0;i<d;i++){
+		gsl_vector_set(delta,i,means[i]-gsl_vector_get(ctx->mu,i));
+	}
+	gsl_matrix *tmp=gsl_vector_outer(delta,delta);
+	for(i=0;i<d;i++){
+		for(j=0;j<d;j++){
+			double n=scatter[i*d+j]+gsl_matrix_get(tmp,i,j)*(ctx->k*num)/(ctx->k+num);
+			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+n);
+		}
+	}
 	ctx->shape=NULL;
-	ctx->mu+=(gp->k/(ctx->k+gp->k)) * delta;
+	gsl_vector_mul_constant(delta,num/(ctx->k+num));
+	gsl_vector_add(ctx->mu,delta);
+	ctx->n+=num;
+	ctx->k+=num;
+}
+
+void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
+	gsl_vector *delta=gsl_vector_clone(gp->mu);
+	gsl_vector_sub(delta,ctx->mu);
+	double tmp=((gp->k*ctx->k)/(gp->k+ctx->k));
+	int i,j;
+	for(i=0;i<ctx->invShape->size1;i++){
+		for(j=0;j<ctx->invShape->size1;j++){
+			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+gsl_matrix_get(gp->invShape,i,j)+tmp);
+		}
+	}
+	/*ctx->invShape+=gp->invShape;
+	ctx->invShape+=((gp->k*ctx->k)/(gp->k+ctx->k));*/
+	ctx->shape=NULL;
+	tmp=gp->k/(ctx->k+gp->k);
+	for(i=0;i<ctx->mu->size;i++){
+		gsl_vector_set(ctx->mu,i,gsl_vector_get(ctx->mu,i)+tmp+gsl_vector_get(delta,i));
+	}
 	ctx->n += gp->n;
 	ctx->k += gp->k;
 }

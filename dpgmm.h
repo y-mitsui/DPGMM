@@ -69,6 +69,7 @@ void gaussian_prior_reset(GaussianPrior *ctx);
 void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *covariance,double* weight);
 StudentT * gaussian_prior_intProb(GaussianPrior *ctx);
 void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp);
+void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,double *weight);
 
 StudentT *student_t_init(int dims);
 void student_t_setDOF(StudentT *ctx,double dof);

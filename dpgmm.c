@@ -140,11 +140,41 @@ void dpgmm_solv(DPGMM *ctx){
 				gsl_vector_set(ctx->vExpLog,i,gsl_vector_get(ctx->vExpLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,0)));
 				gsl_vector_set(ctx->vExpNegLog,i,gsl_vector_get(ctx->vExpNegLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,1)));
 			}
-			for(i=0;i<stickCap;i++){
+			for(i=0;i<ctx->stickCap;i++){
 				gaussian_prior_reset(ctx->n[i]);
-				gaussian_prior_addGP(ctx->n[i],ctx->prior);	
+				gaussian_prior_addGP(ctx->n[i],ctx->prior);
+				double *weight=malloc(sizeof(double)*ctx->z->size1);
+				for(j=0;j<ctx->z->size1;j++){
+					weight[j]=gsl_matrix_get(ctx->z,j,i);
+				}
+				gaussian_prior_addSamples(ctx->n[i],dm,ctx->numData,weight);
+				ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
 			}
-		}while(++iters<16);
+
+			gsl_vector *v=gsl_vector(ctx->z->size2);/*TODO:gsl matrix view*/
+			for(i=ctx->skip;i<prev->size1;i++){
+				gsl_matrix_get_row(v,ctx->z,i);
+				gsl_matrix_set_row(prev,i,v);
+			}
+			
+			gsl_vector *vExpNegLogCum=gsl_cumsum(ctx->vExpNegLog);
+			gsl_vector *base=gsl_vector_clone(ctx->vExpLog);
+			
+			for(i=1;i<vExpNegLogCum->size;i++){
+				gsl_vector_set(base,i,gsl_vector_get(vExpNegLogCum,i-1));
+			}
+			gsl_vector *expTmp=gsl_vector_alloc(base->size);
+			for(i=0;i<base->size;i++){
+				gsl_vector_set(expTmp,i,exp(gsl_vector_get(base,i)));
+			}
+			for(i=ctx->skip;i<ctx->z->size1;i++){
+				gsl_matrix_set_row(ctx->z,i,expTmp);
+			}
+			for(i=0;i<ctx->stickCap;i++){
+				student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData);
+			}
+			
+		}while(++iters<4);
 		
 	}
 	
