@@ -19,7 +19,7 @@ DPGMM *dpgmm_init(int dims,int stickCap){
 	r->z=NULL;
 	r->skip=0;
 	r->epsilon=1e-4;
-	r->nT=calloc(1,sizeof(GaussianPrior*)*stickCap);
+	r->nT=calloc(1,sizeof(StudentT*)*stickCap);
 	r->vExpLog=gsl_vector_alloc(stickCap);
 	r->vExpNegLog=gsl_vector_alloc(stickCap);
 	gsl_vector_set_all(r->vExpNegLog,-1.0);
@@ -151,7 +151,7 @@ void dpgmm_solv(DPGMM *ctx){
 				ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
 			}
 
-			gsl_vector *v=gsl_vector(ctx->z->size2);/*TODO:gsl matrix view*/
+			gsl_vector *v=gsl_vector_alloc(ctx->z->size2);/*TODO:gsl matrix view*/
 			for(i=ctx->skip;i<prev->size1;i++){
 				gsl_matrix_get_row(v,ctx->z,i);
 				gsl_matrix_set_row(prev,i,v);

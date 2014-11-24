@@ -8,6 +8,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_statistics.h>
 #include <gsl/gsl_linalg.h>
+#include <math.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -42,7 +43,7 @@ typedef struct{
 	gsl_matrix *z;
 	int skip;
 	double epsilon;
-	GaussianPrior **nT;
+	StudentT **nT;
 	gsl_vector *vExpLog;
 	gsl_vector *vExpNegLog;
 	double *data;
@@ -75,5 +76,6 @@ StudentT *student_t_init(int dims);
 void student_t_setDOF(StudentT *ctx,double dof);
 void student_t_setLoc(StudentT *ctx,gsl_vector *loc);
 void student_t_setInvScale(StudentT *ctx,gsl_matrix *invScale);
+double student_t_batchProb(StudentT *ctx,double *dm,int numData);
 
 #endif
