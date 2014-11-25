@@ -18,7 +18,7 @@ double student_t_getLogNorm(StudentT *ctx){
 		ctx->norm-=gsl_sf_lngamma(0.5*ctx->dof);
 		ctx->norm -= log(ctx->dof*M_PI)*(0.5*d);
 		int             s;
-		p = gsl_permutation_alloc (par->ndim);
+		gsl_permutation *p = gsl_permutation_alloc (ctx->invScale->size1);
 		gsl_matrix *lu=gsl_matrix_clone(ctx->invScale);
 		gsl_linalg_LU_decomp (lu, p, &s);           // LU分解
 		double n = gsl_linalg_LU_det (lu, s);    // 行列式
@@ -55,7 +55,6 @@ double *student_t_batchProb(StudentT *ctx,double *dm,int numData){
 	for(i=0;i<numData;i++){
 		val[i]=1.0+val[i]/ctx->dof;
 	}
-	numpy.exp(self.getLogNorm() + numpy.log(val)*(-0.5*(self.dof+d)))
 	for(i=0;i<numData;i++){
 		val[i]=exp(student_t_getLogNorm(ctx)+log(val[i])*(-0.5*(ctx->dof+d)));
 	}

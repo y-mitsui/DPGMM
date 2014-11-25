@@ -171,9 +171,15 @@ void dpgmm_solv(DPGMM *ctx){
 				gsl_matrix_set_row(ctx->z,i,expTmp);
 			}
 			for(i=0;i<ctx->stickCap;i++){
-				student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData);
+				double *val=student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
+				for(j=0;j<ctx->numData-ctx->skip;j++){
+					gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)+val[i]);
+				}
 			}
-			
+			double *norm=student_t_batchProb(ctx->priorT,&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
+			for(i=0;i<ctx->numData-ctx->skip;i++){
+				norm[i]*=exp(expLogStick + gsl_vector_get(vExpNegLogCum,vExpNegLogCum->size-1)) / (1.0 - exp(expNegLogStick));
+			}
 		}while(++iters<4);
 		
 	}
