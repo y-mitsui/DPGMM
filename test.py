@@ -30,6 +30,7 @@ num=model.solve()
 
 print elapsed_time
 print num
+print "%f"%(model.prob([2.0,1.0]))
 #for i in range(10):
 #  x=i*0.4-2.0
   #print "%f,%f"%(x,model.prob([x]))

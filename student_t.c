@@ -1,5 +1,5 @@
 #include "dpgmm.h"
-
+#include <gsl/gsl_blas.h>
 
 StudentT *student_t_init(int dims){
 	StudentT *r=malloc(sizeof(StudentT));
@@ -29,6 +29,24 @@ double student_t_getLogNorm(StudentT *ctx){
 void student_t_setDOF(StudentT *ctx,double dof){
 	ctx->dof=dof;
 	ctx->norm=0.0;
+}
+double student_t_prob(StudentT *ctx,double *x){
+	int d = ctx->loc->size,i;
+	gsl_matrix *delta=gsl_matrix_alloc(d,1);
+	gsl_matrix *tmp=gsl_matrix_alloc(d,1);
+	gsl_matrix *tmp2=gsl_matrix_alloc(1,1);
+	for(i=0;i<d;i++){
+		gsl_matrix_set(delta,i,0,x[i]-gsl_vector_get(ctx->loc,i));
+	}
+	gsl_blas_dgemm (CblasNoTrans, CblasNoTrans,
+                  1.0, ctx->invScale, delta,
+                  0.0, tmp);
+	gsl_blas_dgemm (CblasTrans, CblasNoTrans,
+                  1.0, delta, tmp,
+                  0.0, tmp2);
+	double val=gsl_matrix_get(tmp2,0,0);
+	val = 1.0 + val/ctx->dof;
+    	return exp(student_t_getLogNorm(ctx) + log(val)*(-0.5*(ctx->dof+d)));
 }
 double *student_t_batchProb(StudentT *ctx,double *dm,int numData){
 	int d=ctx->loc->size,i,j,k;

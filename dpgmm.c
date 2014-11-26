@@ -66,7 +66,25 @@ int setDefaultsPrior(DPGMM *ctx){
 double *dpgmm_getDM(DPGMM *ctx){
 	return ctx->data;
 }
-void dpgmm_solv(DPGMM *ctx){
+double dpgmm_prob(DPGMM *ctx,double *x){
+	double ret,stick;
+	int i;
+
+	ret=0.0;
+	stick=1.0;
+	gsl_vector *vec=gsl_vector_alloc(ctx->v->size2);
+	for(i=0;i<ctx->stickCap;i++){
+		double bp=student_t_prob(ctx->nT[i],x);
+		gsl_matrix_get_row(vec,ctx->v,i);
+		double ev=gsl_matrix_get(ctx->v,i,0)/gsl_vector_sum(vec);
+		ret += bp * stick * ev;
+	        stick *= 1.0 - ev;
+	}
+	double bp=student_t_prob(ctx->priorT,x);
+	ret += bp * stick;
+	return ret;
+}
+int dpgmm_solv(DPGMM *ctx,int limitIter){
 	gsl_matrix *newZ;
 	double *dm=dpgmm_getDM(ctx);
 	double *alpha,*theta,expLogStick,expNegLogStick;
@@ -103,92 +121,115 @@ void dpgmm_solv(DPGMM *ctx){
 				}
 			}
 		}
-
-		gsl_matrix *prev=gsl_matrix_clone(ctx->z);
-		int iters=0;
-		do{
-			gsl_vector_set(ctx->alpha,0,gsl_vector_get(ctx->beta,0)+ctx->stickCap);
-			gsl_vector_set(ctx->alpha,1,gsl_vector_get(ctx->beta,1)-gsl_vector_sum(ctx->vExpNegLog));
-			double alphaRate=gsl_vector_get(ctx->alpha,0)/gsl_vector_get(ctx->alpha,1);
-			expLogStick=-gsl_sf_psi(1.0 + alphaRate);
-			expNegLogStick=expLogStick;
-			expLogStick += gsl_sf_psi(1.0);
-			expNegLogStick +=gsl_sf_psi(alphaRate);
-
-			for(i=0;i<ctx->v->size1;i++){
-				gsl_matrix_set(ctx->v,i,0,1.0);
-				gsl_matrix_set(ctx->v,i,1,alphaRate);
-			}
-
-			gsl_vector *sums = gsl_matrix_sum_row(ctx->z);
-			gsl_vector *cumsums = gsl_cumsum(sums);
-			for(i=0;i<ctx->v->size1;i++){
-				gsl_matrix_set(ctx->v,i,0,gsl_matrix_get(ctx->v,i,0)+gsl_vector_get(sums,i));
-				gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)+ctx->z->size1);
-				gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)-gsl_vector_get(cumsums,i));
-			}
-
-			for(i=0;i<ctx->v->size1;i++){
-				double total=0.0;
-				for(j=0;j<ctx->v->size1;j++){
-					total+=gsl_matrix_get(ctx->z,i,j);
-				}
-				gsl_vector_set(ctx->vExpLog,i,-gsl_sf_psi(total));
-			}
-			gsl_vector_memcpy(ctx->vExpNegLog,ctx->vExpLog);
-			for(i=0;i<ctx->v->size1;i++){
-				gsl_vector_set(ctx->vExpLog,i,gsl_vector_get(ctx->vExpLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,0)));
-				gsl_vector_set(ctx->vExpNegLog,i,gsl_vector_get(ctx->vExpNegLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,1)));
-			}
-			for(i=0;i<ctx->stickCap;i++){
-				gaussian_prior_reset(ctx->n[i]);
-				gaussian_prior_addGP(ctx->n[i],ctx->prior);
-				double *weight=malloc(sizeof(double)*ctx->z->size1);
-				for(j=0;j<ctx->z->size1;j++){
-					weight[j]=gsl_matrix_get(ctx->z,j,i);
-				}
-				gaussian_prior_addSamples(ctx->n[i],dm,ctx->numData,weight);
-				ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
-			}
-
-			gsl_vector *v=gsl_vector_alloc(ctx->z->size2);/*TODO:gsl matrix view*/
-			for(i=ctx->skip;i<prev->size1;i++){
-				gsl_matrix_get_row(v,ctx->z,i);
-				gsl_matrix_set_row(prev,i,v);
-			}
-			
-			gsl_vector *vExpNegLogCum=gsl_cumsum(ctx->vExpNegLog);
-			gsl_vector *base=gsl_vector_clone(ctx->vExpLog);
-			
-			for(i=1;i<vExpNegLogCum->size;i++){
-				gsl_vector_set(base,i,gsl_vector_get(vExpNegLogCum,i-1));
-			}
-			gsl_vector *expTmp=gsl_vector_alloc(base->size);
-			for(i=0;i<base->size;i++){
-				gsl_vector_set(expTmp,i,exp(gsl_vector_get(base,i)));
-			}
-			for(i=ctx->skip;i<ctx->z->size1;i++){
-				gsl_matrix_set_row(ctx->z,i,expTmp);
-			}
-			for(i=0;i<ctx->stickCap;i++){
-				double *val=student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
-				for(j=0;j<ctx->numData-ctx->skip;j++){
-					gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)+val[i]);
-				}
-			}
-			double *norm=student_t_batchProb(ctx->priorT,&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
-			for(i=0;i<ctx->numData-ctx->skip;i++){
-				norm[i]*=exp(expLogStick + gsl_vector_get(vExpNegLogCum,vExpNegLogCum->size-1)) / (1.0 - exp(expNegLogStick));
-			}
-		}while(++iters<4);
-		
 	}
+	gsl_matrix *prev=gsl_matrix_clone(ctx->z);
+	int iters=0;
+	do{
+		gsl_vector_set(ctx->alpha,0,gsl_vector_get(ctx->beta,0)+ctx->stickCap);
+		gsl_vector_set(ctx->alpha,1,gsl_vector_get(ctx->beta,1)-gsl_vector_sum(ctx->vExpNegLog));
+		double alphaRate=gsl_vector_get(ctx->alpha,0)/gsl_vector_get(ctx->alpha,1);
+		expLogStick=-gsl_sf_psi(1.0 + alphaRate);
+		expNegLogStick=expLogStick;
+		expLogStick += gsl_sf_psi(1.0);
+		expNegLogStick +=gsl_sf_psi(alphaRate);
+
+		for(i=0;i<ctx->v->size1;i++){
+			gsl_matrix_set(ctx->v,i,0,1.0);
+			gsl_matrix_set(ctx->v,i,1,alphaRate);
+		}
+
+		gsl_vector *sums = gsl_matrix_sum_row(ctx->z);
+		gsl_vector *cumsums = gsl_cumsum(sums);
+		for(i=0;i<ctx->v->size1;i++){
+			gsl_matrix_set(ctx->v,i,0,gsl_matrix_get(ctx->v,i,0)+gsl_vector_get(sums,i));
+			gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)+ctx->z->size1);
+			gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)-gsl_vector_get(cumsums,i));
+		}
+
+		for(i=0;i<ctx->v->size1;i++){
+			double total=0.0;
+			for(j=0;j<ctx->v->size1;j++){
+				total+=gsl_matrix_get(ctx->z,i,j);
+			}
+			gsl_vector_set(ctx->vExpLog,i,-gsl_sf_psi(total));
+		}
+		gsl_vector_memcpy(ctx->vExpNegLog,ctx->vExpLog);
+		for(i=0;i<ctx->v->size1;i++){
+			gsl_vector_set(ctx->vExpLog,i,gsl_vector_get(ctx->vExpLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,0)));
+			gsl_vector_set(ctx->vExpNegLog,i,gsl_vector_get(ctx->vExpNegLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,1)));
+		}
+		for(i=0;i<ctx->stickCap;i++){
+			gaussian_prior_reset(ctx->n[i]);
+			gaussian_prior_addGP(ctx->n[i],ctx->prior);
+			double *weight=malloc(sizeof(double)*ctx->z->size1);
+			for(j=0;j<ctx->z->size1;j++){
+				weight[j]=gsl_matrix_get(ctx->z,j,i);
+			}
+			gaussian_prior_addSamples(ctx->n[i],dm,ctx->numData,weight);
+			ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
+		}
+
+		gsl_vector *v=gsl_vector_alloc(ctx->z->size2);/*TODO:gsl matrix view*/
+		for(i=ctx->skip;i<prev->size1;i++){
+			gsl_matrix_get_row(v,ctx->z,i);
+			gsl_matrix_set_row(prev,i,v);
+		}
+			
+		gsl_vector *vExpNegLogCum=gsl_cumsum(ctx->vExpNegLog);
+		gsl_vector *base=gsl_vector_clone(ctx->vExpLog);
+			
+		for(i=1;i<vExpNegLogCum->size;i++){
+			gsl_vector_set(base,i,gsl_vector_get(vExpNegLogCum,i-1));
+		}
+		gsl_vector *expTmp=gsl_vector_alloc(base->size);
+		for(i=0;i<base->size;i++){
+			gsl_vector_set(expTmp,i,exp(gsl_vector_get(base,i)));
+		}
+		for(i=ctx->skip;i<ctx->z->size1;i++){
+			gsl_matrix_set_row(ctx->z,i,expTmp);
+		}
+		for(i=0;i<ctx->stickCap;i++){
+			double *val=student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
+			for(j=0;j<ctx->numData-ctx->skip;j++){
+				gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)+val[i]);
+			}
+		}
+		double *norm=student_t_batchProb(ctx->priorT,&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
+		for(i=0;i<ctx->numData-ctx->skip;i++){
+			norm[i]*=exp(expLogStick + gsl_vector_get(vExpNegLogCum,vExpNegLogCum->size-1)) / (1.0 - exp(expNegLogStick));
+		}
+		double *diver=malloc(sizeof(double)*ctx->numData-ctx->skip*ctx->z->size2);
+		for(i=0;i<ctx->numData-ctx->skip;i++){
+			double total=0.0;
+			for(j=0;j<ctx->z->size2;j++){
+				total+=gsl_matrix_get(ctx->z,i+ctx->skip,j);
+			}
+			diver[i]=total+norm[i];
+		}
+		for(i=0;i<ctx->z->size1-ctx->skip;i++){
+			for(j=0;j<ctx->z->size2;j++){
+				gsl_matrix_set(ctx->z,i,j,gsl_matrix_get(ctx->z,i+ctx->skip,j)/diver[i]);
+			}
+		}
+		double change=0.0;
+		for(i=0;i<ctx->z->size1-ctx->skip;i++){
+			double total=0.0;
+			for(j=0;j<ctx->z->size2;j++){
+				total+=abs(gsl_matrix_get(prev,i+ctx->skip,j)-gsl_matrix_get(ctx->z,i+ctx->skip,j));
+			}
+			if(change<total) change=total;
+		}
+		if(change<ctx->epsilon) break;
+	}while(++iters<limitIter);
+
+	return iters;
 	
 }
 /* TODO:double のNULLを定義*/
 int main(void){
 	double sample[2];
 	char buf[128];
+	double train[2]={2.0,1.0};
 
 	
 	DPGMM *ctx=dpgmm_init(DIMENTION,1);
@@ -201,8 +242,10 @@ int main(void){
 	
 	clock_t t=clock();
 	setDefaultsPrior(ctx);	
-	dpgmm_solv(ctx);
+	dpgmm_solv(ctx,10);
+	double p=dpgmm_prob(ctx,train);
 	printf("%.10f\n",(double)(clock()-t)/ (double)CLOCKS_PER_SEC);
+	printf("%lf\n",p);
 	//train(sample,NUM_SAMPLE);
 	return 0;
 }
