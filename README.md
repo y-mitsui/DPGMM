@@ -4,7 +4,7 @@
 C liblary of Variational Inference for the Infinite Gaussian Mixture Model of haines/DPGMM base.
 
 ## Features
-* Improve parformance
+* Improved performance, because of written by C language only.
 
 
 ## Install
