@@ -1,7 +1,7 @@
 ﻿DPGMM
 =============
 
-C liblary of Variational Inference for the Infinite Gaussian Mixture Model that base haines/DPGMM.
+C liblary of Variational Inference for the Infinite Gaussian Mixture Model of haines/DPGMM base.
 
 ## Features
 * Improve parformance
