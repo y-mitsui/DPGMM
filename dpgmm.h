@@ -14,9 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define STICK_CAP 1
-#define LIMIT_DATA 40000
-#define DIMENTION 2
+#define LIMIT_DATA 1000000
 #define EPS 0.1
 #define NUM_SAMPLE 10
 typedef struct {
@@ -55,6 +53,16 @@ typedef struct{
 void setArray(double *array,int num,double val);
 double sum(double *array,int num);
 double *cumsum(double *array,int num);
+
+DPGMM *dpgmm_init(int dims,int stickCap);
+void dpgmm_release(DPGMM *ctx);
+void dpgmm_add(DPGMM *ctx,double *sample);
+int dpgmm_setPrior(DPGMM *ctx,gsl_vector* mean,gsl_matrix* cover,double* weight,double scale);
+int dpgmm_setDefaultsPrior(DPGMM *ctx);
+double *dpgmm_getDM(DPGMM *ctx);
+double dpgmm_prob(DPGMM *ctx,double *x);
+int dpgmm_solv(DPGMM *ctx,int limitIter);
+
 
 gsl_vector *gsl_vector_clone(gsl_vector *src);
 gsl_matrix *gsl_matrix_clone(gsl_matrix *src);

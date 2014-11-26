@@ -1,5 +1,5 @@
 #include "dpgmm.h"
-#include <time.h>
+
 
 DPGMM *dpgmm_init(int dims,int stickCap){
 	int i;
@@ -69,14 +69,6 @@ int dpgmm_setDefaultsPrior(DPGMM *ctx){
 			gsl_matrix_set(cover,j,i,gsl_matrix_get(cover,i,j));
 		}
 	}
-	/*for(i=0;i<ctx->dims;i++){
-		printf("means[%d]:%lf\n",i,gsl_vector_get(means,i));
-	}
-	for(i=0;i<ctx->dims;i++){
-		for(j=0;j<ctx->dims;j++){
-			printf("cover[%d,%d]:%lf\n",i,j,gsl_matrix_get(cover,i,j));
-		}
-	}*/
 	dpgmm_setPrior(ctx,means,cover,NULL,1);
 	return 1;
 }
@@ -244,29 +236,4 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 	
 }
 /* TODO:double のNULLを定義*/
-int main(void){
-	double sample[2];
-	char buf[128];
-	double train[2]={2.0,1.0};
-
-	
-	DPGMM *ctx=dpgmm_init(DIMENTION,1);
-	FILE *fp=fopen("data.txt","r");
-	while(fgets(buf,sizeof(buf),fp)){
-		sscanf(buf,"%lf,%lf",&sample[0],&sample[1]);
-		dpgmm_add(ctx,sample);
-	}
-	fclose(fp);
-	
-	clock_t t=clock();
-	dpgmm_setDefaultsPrior(ctx);	
-	dpgmm_solv(ctx,10);
-	double p=dpgmm_prob(ctx,train);
-	printf("%.10f\n",(double)(clock()-t)/ (double)CLOCKS_PER_SEC);
-	printf("%lf\n",p);
-	dpgmm_release(ctx);
-	//train(sample,NUM_SAMPLE);
-	return 0;
-}
-
 
