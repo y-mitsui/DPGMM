@@ -14,7 +14,7 @@ You require cmake and GSL
 1. Input this following on shell.  
 
     $ cmake .     #(Be careful dot.)
-    $ make && make install
+    $ make && sudo make install
 
 **[Case of MinGW on Windows]**  
 1. Input this following on command prompt.
