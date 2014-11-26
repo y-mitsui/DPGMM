@@ -65,19 +65,20 @@ double gsl_vector_sum(gsl_vector *v);
 gsl_vector *gsl_cumsum(gsl_vector *v);
 gsl_vector* gsl_matrix_sum_row(gsl_matrix *m);
 
-
 GaussianPrior *gaussian_prior_init(int dims);
 void gaussian_prior_reset(GaussianPrior *ctx);
 void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *covariance,double* weight);
 StudentT * gaussian_prior_intProb(GaussianPrior *ctx);
 void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp);
 void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,double *weight);
+void gaussian_prior_free(GaussianPrior *ctx);
 
 StudentT *student_t_init(int dims);
 void student_t_setDOF(StudentT *ctx,double dof);
 void student_t_setLoc(StudentT *ctx,gsl_vector *loc);
 void student_t_setInvScale(StudentT *ctx,gsl_matrix *invScale);
-double *student_t_batchProb(StudentT *ctx,double *dm,int numData);
+void student_t_batchProb(StudentT *ctx,double *dm,int numData,double *result);
 double student_t_prob(StudentT *ctx,double *x);
+void student_t_free(StudentT *ctx);
 
 #endif

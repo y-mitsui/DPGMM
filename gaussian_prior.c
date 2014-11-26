@@ -10,6 +10,12 @@ GaussianPrior *gaussian_prior_init(int dims){
 	r->n=r->k=0.0;
 	return r;
 }
+void gaussian_prior_free(GaussianPrior *ctx){
+	gsl_matrix_free(ctx->invShape);
+	gsl_vector_free(ctx->mu);
+	if(ctx->shape) gsl_matrix_free(ctx->shape);
+	free(ctx);
+}
 gsl_matrix *gaussian_prior_getLambda(GaussianPrior *ctx){
 	if(ctx->shape==NULL){
 		gsl_matrix *invShape=gsl_matrix_clone(ctx->invShape);
@@ -18,6 +24,8 @@ gsl_matrix *gaussian_prior_getLambda(GaussianPrior *ctx){
 		gsl_linalg_LU_decomp(invShape,p,&s);
 		ctx->shape=gsl_matrix_alloc(ctx->invShape->size1,ctx->invShape->size2);
 		gsl_linalg_LU_invert(invShape,p,ctx->shape);
+		gsl_matrix_free(invShape);
+		gsl_permutation_free(p);
 	}
 	return ctx->shape;
 }
@@ -59,12 +67,7 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 			}
 		}
 	}
-	/*for(i=0;i<d;i++){
-		for(j=0;j<d;j++){
-			printf("mat[i*d+j]:%lf\n",mat[i*d+j]);
-		}
-	}
-	puts("-------------------");*/
+	
 	gsl_vector *delta=gsl_vector_alloc(d);
 	for(i=0;i<d;i++){
 		gsl_vector_set(delta,i,means[i]-gsl_vector_get(ctx->mu,i));
@@ -81,6 +84,9 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 	gsl_vector_add(ctx->mu,delta);
 	ctx->n+=num;
 	ctx->k+=num;
+	free(means);
+	free(diff);
+	free(scatter);
 }
 
 void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
@@ -102,6 +108,7 @@ void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
 	}
 	ctx->n += gp->n;
 	ctx->k += gp->k;
+	gsl_vector_free(delta);
 }
 void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *covariance,double* weight){
 	double weight_const;
@@ -120,4 +127,5 @@ void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *cov
 	gsl_vector_add(ctx->mu,delta);
 	ctx->n+=weight_const;
 	ctx->k+=weight_const;
+	gsl_vector_free(delta);
 }

@@ -28,17 +28,34 @@ DPGMM *dpgmm_init(int dims,int stickCap){
 	r->numData=0;
 	return r;
 }
+void dpgmm_release(DPGMM *ctx){
+	int i;
+	free(ctx->data);
+	gsl_vector_free(ctx->vExpNegLog);
+	gsl_vector_free(ctx->vExpLog);
+	for(i=0;i<ctx->stickCap;i++){
+		student_t_free(ctx->nT[i]);
+	}
+	free(ctx->nT);
+	gsl_matrix_free(ctx->v);
+	gsl_vector_free(ctx->alpha);
+	gsl_vector_free(ctx->beta);
+	for(i=0;i<ctx->stickCap;i++)
+		gaussian_prior_free(ctx->n[i]);
+	free(ctx->n);
+	free(ctx);
+}
 void dpgmm_add(DPGMM *ctx,double *sample){
 	memcpy(&ctx->data[ctx->numData*ctx->dims],sample,sizeof(double)*ctx->dims);
 	ctx->numData++;
 }
-int setPrior(DPGMM *ctx,gsl_vector* mean,gsl_matrix* cover,double* weight,double scale){
+int dpgmm_setPrior(DPGMM *ctx,gsl_vector* mean,gsl_matrix* cover,double* weight,double scale){
 	gaussian_prior_reset(ctx->prior);
 	gaussian_prior_addPrior(ctx->prior,mean,cover,weight);
 	ctx->priorT=gaussian_prior_intProb(ctx->prior);
 	return 1;
 }
-int setDefaultsPrior(DPGMM *ctx){
+int dpgmm_setDefaultsPrior(DPGMM *ctx){
 	int i,j;
 	gsl_vector *means=gsl_vector_alloc(ctx->dims);
 	gsl_matrix *cover=gsl_matrix_alloc(ctx->dims,ctx->dims);
@@ -60,7 +77,7 @@ int setDefaultsPrior(DPGMM *ctx){
 			printf("cover[%d,%d]:%lf\n",i,j,gsl_matrix_get(cover,i,j));
 		}
 	}*/
-	setPrior(ctx,means,cover,NULL,1);
+	dpgmm_setPrior(ctx,means,cover,NULL,1);
 	return 1;
 }
 double *dpgmm_getDM(DPGMM *ctx){
@@ -188,15 +205,16 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		for(i=ctx->skip;i<ctx->z->size1;i++){
 			gsl_matrix_set_row(ctx->z,i,expTmp);
 		}
+		double *val=malloc(sizeof(double)*(ctx->numData-ctx->skip));
 		for(i=0;i<ctx->stickCap;i++){
-			double *val=student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
+			student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip,val);
 			for(j=0;j<ctx->numData-ctx->skip;j++){
 				gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)+val[i]);
 			}
 		}
-		double *norm=student_t_batchProb(ctx->priorT,&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip);
+		student_t_batchProb(ctx->priorT,&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip,val);
 		for(i=0;i<ctx->numData-ctx->skip;i++){
-			norm[i]*=exp(expLogStick + gsl_vector_get(vExpNegLogCum,vExpNegLogCum->size-1)) / (1.0 - exp(expNegLogStick));
+			val[i]*=exp(expLogStick + gsl_vector_get(vExpNegLogCum,vExpNegLogCum->size-1)) / (1.0 - exp(expNegLogStick));
 		}
 		double *diver=malloc(sizeof(double)*ctx->numData-ctx->skip*ctx->z->size2);
 		for(i=0;i<ctx->numData-ctx->skip;i++){
@@ -204,7 +222,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			for(j=0;j<ctx->z->size2;j++){
 				total+=gsl_matrix_get(ctx->z,i+ctx->skip,j);
 			}
-			diver[i]=total+norm[i];
+			diver[i]=total+val[i];
 		}
 		for(i=0;i<ctx->z->size1-ctx->skip;i++){
 			for(j=0;j<ctx->z->size2;j++){
@@ -241,11 +259,12 @@ int main(void){
 	fclose(fp);
 	
 	clock_t t=clock();
-	setDefaultsPrior(ctx);	
+	dpgmm_setDefaultsPrior(ctx);	
 	dpgmm_solv(ctx,10);
 	double p=dpgmm_prob(ctx,train);
 	printf("%.10f\n",(double)(clock()-t)/ (double)CLOCKS_PER_SEC);
 	printf("%lf\n",p);
+	dpgmm_release(ctx);
 	//train(sample,NUM_SAMPLE);
 	return 0;
 }
