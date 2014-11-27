@@ -50,19 +50,52 @@ typedef struct{
 } DPGMM;
 
 
+/*
+	コンテキストの作成を行う
+	dims:データの次元数
+	stickCap:アルゴリズム内部で使う値。通常0から6程度の数値を指定。大きな値ほど計算量が大きく、精度が高い
+*/
+DPGMM *dpgmm_init(int dims,int stickCap);
+/*
+	コンテキストの解放
+*/
+void dpgmm_release(DPGMM *ctx);
+/*
+	サンプルデータをコンテキストに格納する。
+*/
+void dpgmm_add(DPGMM *ctx,double *sample);
+/*
+	事前分布の設定を行う。
+	mean:平均
+	cover:分散共分散行列
+	weight:ウエイト
+	scale:スケール
+*/
+int dpgmm_setPrior(DPGMM *ctx,gsl_vector* mean,gsl_matrix* cover,double* weight,double scale);
+/*
+	データの平均と分散を使って事前分布の設定を行う。
+*/
+int dpgmm_setDefaultsPrior(DPGMM *ctx);
+/*
+	学習を行う。
+	limitIter:アルゴリズムの繰り返し回数の上限値
+*/
+int dpgmm_solv(DPGMM *ctx,int limitIter);
+/*
+	事後確率を求める
+	x:データ
+*/
+double dpgmm_prob(DPGMM *ctx,double *x);
+double *dpgmm_getDM(DPGMM *ctx);
+
+
+
+
+
+
 void setArray(double *array,int num,double val);
 double sum(double *array,int num);
 double *cumsum(double *array,int num);
-
-DPGMM *dpgmm_init(int dims,int stickCap);
-void dpgmm_release(DPGMM *ctx);
-void dpgmm_add(DPGMM *ctx,double *sample);
-int dpgmm_setPrior(DPGMM *ctx,gsl_vector* mean,gsl_matrix* cover,double* weight,double scale);
-int dpgmm_setDefaultsPrior(DPGMM *ctx);
-double *dpgmm_getDM(DPGMM *ctx);
-double dpgmm_prob(DPGMM *ctx,double *x);
-int dpgmm_solv(DPGMM *ctx,int limitIter);
-
 
 gsl_vector *gsl_vector_clone(gsl_vector *src);
 gsl_matrix *gsl_matrix_clone(gsl_matrix *src);
