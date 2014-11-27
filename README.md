@@ -28,4 +28,4 @@ You require cmake and GSL
 2. Add "libdpgmm.a" and "dpgmm.h"  to your project.
 
 ## Usage
-Read example.c
+Read dpgmm.h and example.c
