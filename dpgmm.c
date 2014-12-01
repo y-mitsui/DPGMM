@@ -43,6 +43,7 @@ void dpgmm_release(DPGMM *ctx){
 	for(i=0;i<ctx->stickCap;i++)
 		gaussian_prior_free(ctx->n[i]);
 	free(ctx->n);
+	gsl_matrix_free(ctx->z);
 	free(ctx);
 }
 void dpgmm_add(DPGMM *ctx,double *sample){
@@ -70,8 +71,8 @@ int dpgmm_setDefaultsPrior(DPGMM *ctx){
 		}
 	}
 	dpgmm_setPrior(ctx,means,cover,NULL,1);
-	gsl_vector_free(means);
-	gsl_matrix_free(cover);
+	/*gsl_vector_free(means);
+	gsl_matrix_free(cover);*/
 	return 1;
 }
 double *dpgmm_getDM(DPGMM *ctx){
@@ -93,7 +94,7 @@ double dpgmm_prob(DPGMM *ctx,double *x){
 	}
 	double bp=student_t_prob(ctx->priorT,x);
 	ret += bp * stick;
-	gsl_vector_free(vec);
+	//gsl_vector_free(vec);
 	return ret;
 }
 int dpgmm_solv(DPGMM *ctx,int limitIter){
@@ -134,8 +135,8 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 				}
 			}
 		}
-		free(alpha);
-		free(theta);
+		/*free(alpha);
+		free(theta);*/
 	}
 	gsl_matrix *prev=gsl_matrix_clone(ctx->z);
 	int iters=0;
@@ -162,8 +163,8 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		}
 		gsl_vector_free(cumsums);
 		for(i=0;i<ctx->v->size1;i++){
-			double total=0.0;
-			for(j=0;j<ctx->v->size1;j++){
+			double total=0.001;
+			for(j=0;j<ctx->z->size2;j++){
 				total+=gsl_matrix_get(ctx->z,i,j);
 			}
 			gsl_vector_set(ctx->vExpLog,i,-gsl_sf_psi(total));
@@ -239,13 +240,12 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			}
 			if(change<total) change=total;
 		}
-		free(diver);
-		free(val);
+		/*free(diver);
+		free(val);*/
 		if(change<ctx->epsilon) break;
 	}while(++iters<limitIter);
 
-	gsl_matrix_free(prev);
-	gsl_matrix_free(ctx->z);
+	//gsl_matrix_free(prev);
 	return iters;
 	
 }

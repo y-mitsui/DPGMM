@@ -21,8 +21,8 @@ int main(void){
 	dpgmm_setDefaultsPrior(ctx); //事前分布の設定
 	dpgmm_solv(ctx,10); //学習
 	double p=dpgmm_prob(ctx,train); //事後確率
-	printf("%.10f\n",(double)(clock()-t)/ (double)CLOCKS_PER_SEC);
-	printf("%lf\n",p);
+	printf("TIME:%.10f\n",(double)(clock()-t)/ (double)CLOCKS_PER_SEC);
+	printf("RESULT:%lf\n",p);
 	dpgmm_release(ctx);
 	return 0;
 }
