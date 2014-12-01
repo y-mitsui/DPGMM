@@ -15,7 +15,7 @@ You require cmake and GSL
 
     $ sudo apt-get install libgsl0ldbl libgsl0-dev
 
-2. Input this following on shell.  
+2. Input this following on shell. 
 
     $ cmake .     #(Be careful dot.)
     $ make && sudo make install
