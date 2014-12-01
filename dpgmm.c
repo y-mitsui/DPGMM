@@ -70,6 +70,8 @@ int dpgmm_setDefaultsPrior(DPGMM *ctx){
 		}
 	}
 	dpgmm_setPrior(ctx,means,cover,NULL,1);
+	gsl_vector_free(means);
+	gsl_matrix_free(cover);
 	return 1;
 }
 double *dpgmm_getDM(DPGMM *ctx){
@@ -91,6 +93,7 @@ double dpgmm_prob(DPGMM *ctx,double *x){
 	}
 	double bp=student_t_prob(ctx->priorT,x);
 	ret += bp * stick;
+	gsl_vector_free(vec);
 	return ret;
 }
 int dpgmm_solv(DPGMM *ctx,int limitIter){
@@ -109,6 +112,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 				gsl_matrix_get_row(v,ctx->z,i);
 				gsl_matrix_set_row(newZ,i,v);
 			}
+			gsl_vector_free(v);
 		}
 		ctx->z=newZ;
 		
@@ -130,6 +134,8 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 				}
 			}
 		}
+		free(alpha);
+		free(theta);
 	}
 	gsl_matrix *prev=gsl_matrix_clone(ctx->z);
 	int iters=0;
@@ -154,7 +160,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)+ctx->z->size1);
 			gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)-gsl_vector_get(cumsums,i));
 		}
-
+		gsl_vector_free(cumsums);
 		for(i=0;i<ctx->v->size1;i++){
 			double total=0.0;
 			for(j=0;j<ctx->v->size1;j++){
@@ -176,6 +182,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			}
 			gaussian_prior_addSamples(ctx->n[i],dm,ctx->numData,weight);
 			ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
+			free(weight);
 		}
 
 		gsl_vector *v=gsl_vector_alloc(ctx->z->size2);/*TODO:gsl matrix view*/
@@ -183,6 +190,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			gsl_matrix_get_row(v,ctx->z,i);
 			gsl_matrix_set_row(prev,i,v);
 		}
+		gsl_vector_free(v);
 			
 		gsl_vector *vExpNegLogCum=gsl_cumsum(ctx->vExpNegLog);
 		gsl_vector *base=gsl_vector_clone(ctx->vExpLog);
@@ -190,10 +198,12 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		for(i=1;i<vExpNegLogCum->size;i++){
 			gsl_vector_set(base,i,gsl_vector_get(vExpNegLogCum,i-1));
 		}
+		gsl_vector_free(vExpNegLogCum);
 		gsl_vector *expTmp=gsl_vector_alloc(base->size);
 		for(i=0;i<base->size;i++){
 			gsl_vector_set(expTmp,i,exp(gsl_vector_get(base,i)));
 		}
+		gsl_vector_free(base);
 		for(i=ctx->skip;i<ctx->z->size1;i++){
 			gsl_matrix_set_row(ctx->z,i,expTmp);
 		}
@@ -229,9 +239,13 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			}
 			if(change<total) change=total;
 		}
+		free(diver);
+		free(val);
 		if(change<ctx->epsilon) break;
 	}while(++iters<limitIter);
 
+	gsl_matrix_free(prev);
+	gsl_matrix_free(ctx->z);
 	return iters;
 	
 }
