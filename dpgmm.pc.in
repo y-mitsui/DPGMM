@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libdpgmm
+Description: C liblary of Variational Inference for the Infinite Gaussian Mixture Model of haines/DPGMM base.
+Version: @PNGLIB_VERSION@
+Libs: @LIBS@
+Libs.private: @LIBS@
+Cflags: -I${includedir}
