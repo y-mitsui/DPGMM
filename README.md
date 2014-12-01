@@ -11,17 +11,17 @@ C liblary of Variational Inference for the Infinite Gaussian Mixture Model of ha
 You require cmake and GSL
 
 **[Case of Ubuntu]**  
-1. Install GNU Scientific Library (GSL) using apt-get 
+(1) Install GNU Scientific Library (GSL) using apt-get 
 
     $ sudo apt-get install libgsl0ldbl libgsl0-dev
 
-2. Input this following on shell. 
+(2) Input this following on shell.
 
     $ cmake .     #(Be careful dot.)
     $ make && sudo make install
 
 ## Usage
-This library respond pkg-config.
+This library responded pkg-config.
 
     $ gcc `pkg-config --cflags dpgmm` yourProgram.c `pkg-config --libs dpgmm`
 
