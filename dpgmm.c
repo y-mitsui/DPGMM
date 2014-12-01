@@ -161,9 +161,9 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)+ctx->z->size1);
 			gsl_matrix_set(ctx->v,i,1,gsl_matrix_get(ctx->v,i,1)-gsl_vector_get(cumsums,i));
 		}
-		gsl_vector_free(cumsums);
+		//gsl_vector_free(cumsums);
 		for(i=0;i<ctx->v->size1;i++){
-			double total=0.001;
+			double total=0.000;
 			for(j=0;j<ctx->z->size2;j++){
 				total+=gsl_matrix_get(ctx->z,i,j);
 			}
@@ -183,7 +183,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			}
 			gaussian_prior_addSamples(ctx->n[i],dm,ctx->numData,weight);
 			ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
-			free(weight);
+			//free(weight);
 		}
 
 		gsl_vector *v=gsl_vector_alloc(ctx->z->size2);/*TODO:gsl matrix view*/
@@ -191,7 +191,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			gsl_matrix_get_row(v,ctx->z,i);
 			gsl_matrix_set_row(prev,i,v);
 		}
-		gsl_vector_free(v);
+		//gsl_vector_free(v);
 			
 		gsl_vector *vExpNegLogCum=gsl_cumsum(ctx->vExpNegLog);
 		gsl_vector *base=gsl_vector_clone(ctx->vExpLog);
@@ -199,12 +199,12 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		for(i=1;i<vExpNegLogCum->size;i++){
 			gsl_vector_set(base,i,gsl_vector_get(vExpNegLogCum,i-1));
 		}
-		gsl_vector_free(vExpNegLogCum);
+		//gsl_vector_free(vExpNegLogCum);
 		gsl_vector *expTmp=gsl_vector_alloc(base->size);
 		for(i=0;i<base->size;i++){
 			gsl_vector_set(expTmp,i,exp(gsl_vector_get(base,i)));
 		}
-		gsl_vector_free(base);
+		//gsl_vector_free(base);
 		for(i=ctx->skip;i<ctx->z->size1;i++){
 			gsl_matrix_set_row(ctx->z,i,expTmp);
 		}
