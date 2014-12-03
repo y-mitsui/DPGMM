@@ -48,9 +48,12 @@ void dpgmm_release(DPGMM *ctx){
 	gsl_matrix_free(ctx->z);
 	free(ctx);
 }
-void dpgmm_add(DPGMM *ctx,double *sample){
+void dpgmm_add(DPGMM *ctx,double *sample){	
 	memcpy(&ctx->data[ctx->numData*ctx->dims],sample,sizeof(double)*ctx->dims);
 	ctx->numData++;
+	if((ctx->numData%LIMIT_DATA)==0){
+		ctx->data=realloc(ctx->data,sizeof(double)*(ctx->numData+LIMIT_DATA));
+	}
 }
 int dpgmm_setPrior(DPGMM *ctx,gsl_vector* mean,gsl_matrix* cover,double* weight,double scale){
 	gaussian_prior_reset(ctx->prior);
