@@ -21,7 +21,7 @@ You require cmake and GSL
     $ make && sudo make install
 
 ## Usage
-This library responded pkg-config.
+This library supported pkg-config.
 
     $ gcc `pkg-config --cflags dpgmm` yourProgram.c `pkg-config --libs dpgmm`
 
