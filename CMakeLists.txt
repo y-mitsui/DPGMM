@@ -48,7 +48,7 @@ set(prefix      ${CMAKE_INSTALL_PREFIX})
 set(exec_prefix ${CMAKE_INSTALL_PREFIX})
 set(libdir      ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 set(includedir  ${CMAKE_INSTALL_PREFIX}/include)
-set(LIBS        "-ldpgmm ${GSL_LIBS}")
+set(LIBS        "-L${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} -ldpgmm ${GSL_LIBS}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dpgmm.pc.in
   ${CMAKE_CURRENT_BINARY_DIR}/${PNGLIB_NAME}.pc @ONLY)
 _png_generate_symlink_code(PNG_PC_INSTALL_CODE
