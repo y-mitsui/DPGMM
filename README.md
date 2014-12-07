@@ -24,6 +24,7 @@ You require cmake and GSL
 
     $ sudo vim /etc/ld.so.conf
     $ ldconfig
+
 ## Usage
 This library supported pkg-config.
 
