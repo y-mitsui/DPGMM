@@ -20,6 +20,10 @@ You require cmake and GSL
     $ cmake .     #(Be careful dot.)
     $ make && sudo make install
 
+(3) Add so searching path /usr/local/lib
+
+    $ sudo vim /etc/ld.so.conf
+    $ ldconfig
 ## Usage
 This library supported pkg-config.
 
