@@ -87,6 +87,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter);
 */
 double dpgmm_prob(DPGMM *ctx,double *x);
 double *dpgmm_getDM(DPGMM *ctx);
+void dpgmm_release(DPGMM *ctx);
 
 
 
