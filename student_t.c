@@ -13,7 +13,7 @@ StudentT *student_t_init(int dims){
 }
 void student_t_free(StudentT *ctx){
 	gsl_vector_free(ctx->loc);
-	gsl_matrix_free(ctx->scale);
+	if(ctx->scale) gsl_matrix_free(ctx->scale);
 	free(ctx);
 }
 double student_t_getLogNorm(StudentT *ctx){
@@ -96,6 +96,7 @@ void student_t_setLoc(StudentT *ctx,gsl_vector *loc){
 }
 
 void student_t_setInvScale(StudentT *ctx,gsl_matrix *invScale){
+	if(ctx->scale) gsl_matrix_free(ctx->scale);
 	ctx->scale=NULL;
 	ctx->invScale=invScale;
 	ctx->norm=0.0;

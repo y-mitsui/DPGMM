@@ -31,6 +31,7 @@ gsl_matrix *gaussian_prior_getLambda(GaussianPrior *ctx){
 }
 void gaussian_prior_reset(GaussianPrior *ctx){
 	gsl_matrix_set_zero(ctx->invShape);
+	if(ctx->shape) gsl_matrix_free(ctx->shape);
 	ctx->shape=NULL;
 	gsl_vector_set_zero(ctx->mu);
 	ctx->n=ctx->k=0.0;

@@ -142,6 +142,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		free(alpha);
 		free(theta);
 	}
+	gsl_rng_free(r);
 	gsl_matrix *prev=gsl_matrix_clone(ctx->z);
 	int iters=0;
 	do{

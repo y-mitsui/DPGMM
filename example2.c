@@ -11,7 +11,7 @@ int main(void){
 	int i,j;
 	char buf[128];
 	
-	FILE *fp=fopen("data.txt","w");
+	FILE *fp=fopen("data2.txt","w");
 	for(i=0;i<2048;i++){
 		stick=drand48();
 		for(j=0;j<2;j++){
@@ -22,7 +22,7 @@ int main(void){
 		fprintf(fp,"%lf\n",num);
 	}
 	fclose(fp);
-	fp=fopen("data.txt","r");
+	fp=fopen("data2.txt","r");
 	DPGMM *ctx=dpgmm_init(1,8);
 	while(fgets(buf,sizeof(buf),fp)){
 		num=atof(buf);
@@ -32,7 +32,9 @@ int main(void){
 	dpgmm_setDefaultsPrior(ctx);
 	dpgmm_solv(ctx,1000);
 	for(x=-10.0;x<40;x+=0.1){
-		printf("%lf %lf\n",x,dpgmm_prob(ctx,&x));
+		dpgmm_prob(ctx,&x);
+		/*printf("%lf %lf\n",x,dpgmm_prob(ctx,&x));*/
 	}
+	dpgmm_release(ctx);
 	return 0;
 }
