@@ -26,7 +26,7 @@ project (DPGMM)
 
 EXEC_PROGRAM(gsl-config ARGS --libs OUTPUT_VARIABLE GSL_LIBS)
 EXEC_PROGRAM(gsl-config ARGS --cflags OUTPUT_VARIABLE GSL_CFLAGS)
-SET(CMAKE_C_FLAGS "-DHAVE_INLINE -O0 -Wall -g ${GSL_CFLAGS}")
+SET(CMAKE_C_FLAGS "-DHAVE_INLINE -O2 -Wall -g ${GSL_CFLAGS}")
 #ADD_LIBRARY(dpgmm STATIC dpgmm.c gaussian_prior.c gsl.c calc.c student_t.c)
 ADD_LIBRARY(dpgmm SHARED dpgmm.c gaussian_prior.c gsl.c calc.c student_t.c)
 
