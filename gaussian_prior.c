@@ -51,11 +51,18 @@ StudentT * gaussian_prior_intProb(GaussianPrior *ctx){
 void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,double *weight){
 	int d=ctx->mu->size,i,j,k;
 	double num=sum(weight,numSample);
-	double *means=malloc(sizeof(double)*d);
+	double *means=calloc(1,sizeof(double)*d);
 	double *diff=malloc(sizeof(double)*d);
 	double *scatter=malloc(sizeof(double)*d*d);
+	double weight_total;
 	for(i=0;i<d;i++){
-		means[i]=gsl_stats_mean(&sample[i],d,numSample);
+		weight_total=0.0;
+		for(j=0;j<numSample;j++){
+			means[i]+=weight[j]*sample[j];
+			weight_total+=weight[j];
+		}
+		means[i]/=weight_total;
+		//printf("means[%d]:%lf\n",i,means[i]);
 	}
 	for(i=0;i<numSample;i++){
 		for(j=0;j<d;j++){
@@ -81,6 +88,7 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 	}
 	ctx->shape=NULL;
 	gsl_vector_mul_constant(delta,num/(ctx->k+num));
+	
 	gsl_vector_add(ctx->mu,delta);
 	ctx->n+=num;
 	ctx->k+=num;
@@ -127,6 +135,7 @@ void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *cov
 	tmp=gsl_vector_outer(delta,delta);
 	gsl_matrix_mul_constant(tmp,(ctx->k*weight_const)/(ctx->k+weight_const));
 	gsl_matrix_add(ctx->invShape,tmp);
+
 	ctx->shape=NULL;
 	gsl_vector_mul_constant(delta,weight_const/(ctx->k+weight_const));
 	gsl_vector_add(ctx->mu,delta);

@@ -1,5 +1,22 @@
 #include "dpgmm.h"
 
+void gsl_vector_print(gsl_vector *v){	
+	int i;
+	for(i=0;i<v->size;i++){
+		printf("%.10lf ",gsl_vector_get(v,i));
+	}
+	puts("");
+	
+}
+void gsl_matrix_print(gsl_matrix *m){	
+	int i,j;
+	for(i=0;i<m->size1;i++){
+		for(j=0;j<m->size2;j++){
+			printf("%.10lf ",gsl_matrix_get(m,i,j));
+		}
+		puts("");
+	}
+}
 gsl_vector* gsl_matrix_sum_row(gsl_matrix *m){
 	int i,j;
 	gsl_vector* r=gsl_vector_alloc(m->size2);
@@ -27,7 +44,7 @@ gsl_vector *gsl_cumsum(gsl_vector *v){
 	gsl_vector_set_zero(r);
 	for(i=0;i<v->size;i++){
 		for(j=0;j<=i;j++){
-			gsl_vector_set(r,i,gsl_vector_get(r,i)+gsl_vector_get(v,i));
+			gsl_vector_set(r,i,gsl_vector_get(r,i)+gsl_vector_get(v,j));
 		}
 	}
 	return r;

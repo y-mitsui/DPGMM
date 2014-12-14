@@ -53,7 +53,7 @@ typedef struct{
 /*
 	コンテキストの作成を行う
 	dims:データの次元数
-	stickCap:アルゴリズム内部で使う値。通常0から6程度の数値を指定。大きな値ほど計算量が大きく、精度が高い
+	stickCap:合わさる正規分布の数の最大数。大きな値ほど計算量が大きいが、複雑な分布に対応できる。
 */
 DPGMM *dpgmm_init(int dims,int stickCap);
 /*
@@ -106,6 +106,8 @@ gsl_matrix* gsl_vector_outer(gsl_vector *a,gsl_vector *b);
 double gsl_vector_sum(gsl_vector *v);
 gsl_vector *gsl_cumsum(gsl_vector *v);
 gsl_vector* gsl_matrix_sum_row(gsl_matrix *m);
+void gsl_vector_print(gsl_vector *v);
+void gsl_matrix_print(gsl_matrix *m);
 
 GaussianPrior *gaussian_prior_init(int dims);
 void gaussian_prior_reset(GaussianPrior *ctx);

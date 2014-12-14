@@ -6,6 +6,8 @@ DPGMM *dpgmm_init(int dims,int stickCap){
 	DPGMM *r=calloc(1,sizeof(DPGMM));
 	r->dims=dims;
 	r->stickCap=stickCap;
+	r->data=malloc(sizeof(double)*LIMIT_DATA*dims);
+	r->numData=0;
 	r->prior=gaussian_prior_init(dims);
 	r->n=malloc(sizeof(GaussianPrior*)*stickCap);
 	for(i=0;i<stickCap;i++)
@@ -24,8 +26,6 @@ DPGMM *dpgmm_init(int dims,int stickCap){
 	r->vExpNegLog=gsl_vector_alloc(stickCap);
 	gsl_vector_set_all(r->vExpNegLog,-1.0);
 	gsl_vector_set_all(r->vExpLog,-1.0);
-	r->data=malloc(sizeof(double)*LIMIT_DATA*dims);
-	r->numData=0;
 	return r;
 }
 void dpgmm_release(DPGMM *ctx){
@@ -107,7 +107,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 	double *dm=dpgmm_getDM(ctx);
 	double *alpha,*theta,expLogStick,expNegLogStick;
 	int offset,i,j;
-	
+	gsl_rng *r = gsl_rng_alloc (gsl_rng_default);
 	if(ctx->z==NULL || ctx->z->size1<ctx->numData){
 		newZ=gsl_matrix_alloc(ctx->numData,ctx->stickCap);
 		if(ctx->z==NULL) offset=0;
@@ -133,7 +133,6 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		}else{
 			size_t size=ctx->z->size1-offset;
 			for(i=0;i<size;i++){
-				gsl_rng *r = gsl_rng_alloc (gsl_rng_default);
 				gsl_ran_dirichlet(r,ctx->stickCap,alpha,theta);
 				for(j=0;j<ctx->stickCap;j++){
 					gsl_matrix_set(ctx->z,i,j,theta[j]);
@@ -169,13 +168,15 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		gsl_vector_free(cumsums);
 		gsl_vector_free(sums);
 		for(i=0;i<ctx->v->size1;i++){
-			double total=0.000;
-			for(j=0;j<ctx->z->size2;j++){
-				total+=gsl_matrix_get(ctx->z,i,j);
+			double total=0.0;
+			for(j=0;j<ctx->v->size2;j++){
+				total+=gsl_matrix_get(ctx->v,i,j);
 			}
 			gsl_vector_set(ctx->vExpLog,i,-gsl_sf_psi(total));
 		}
+		
 		gsl_vector_memcpy(ctx->vExpNegLog,ctx->vExpLog);
+		
 		for(i=0;i<ctx->v->size1;i++){
 			gsl_vector_set(ctx->vExpLog,i,gsl_vector_get(ctx->vExpLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,0)));
 			gsl_vector_set(ctx->vExpNegLog,i,gsl_vector_get(ctx->vExpNegLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,1)));
@@ -184,6 +185,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			gaussian_prior_reset(ctx->n[i]);
 			gaussian_prior_addGP(ctx->n[i],ctx->prior);
 			double *weight=malloc(sizeof(double)*ctx->z->size1);
+			
 			for(j=0;j<ctx->z->size1;j++){
 				weight[j]=gsl_matrix_get(ctx->z,j,i);
 			}
@@ -192,19 +194,19 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			ctx->nT[i]=gaussian_prior_intProb(ctx->n[i]);
 			free(weight);
 		}
-
+		
 		gsl_vector *v=gsl_vector_alloc(ctx->z->size2);/*TODO:gsl matrix view*/
 		for(i=ctx->skip;i<prev->size1;i++){
 			gsl_matrix_get_row(v,ctx->z,i);
 			gsl_matrix_set_row(prev,i,v);
 		}
 		gsl_vector_free(v);
-			
+		
 		gsl_vector *vExpNegLogCum=gsl_cumsum(ctx->vExpNegLog);
 		gsl_vector *base=gsl_vector_clone(ctx->vExpLog);
-			
+		
 		for(i=1;i<vExpNegLogCum->size;i++){
-			gsl_vector_set(base,i,gsl_vector_get(vExpNegLogCum,i-1));
+			gsl_vector_set(base,i,gsl_vector_get(base,i)+gsl_vector_get(vExpNegLogCum,i-1));
 		}
 		
 		gsl_vector *expTmp=gsl_vector_alloc(base->size);
@@ -215,11 +217,12 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		for(i=ctx->skip;i<ctx->z->size1;i++){
 			gsl_matrix_set_row(ctx->z,i,expTmp);
 		}
+		
 		double *val=malloc(sizeof(double)*(ctx->numData-ctx->skip));
 		for(i=0;i<ctx->stickCap;i++){
 			student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip,val);
 			for(j=0;j<ctx->numData-ctx->skip;j++){
-				gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)+val[i]);
+				gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)*val[j]);
 			}
 		}
 		student_t_batchProb(ctx->priorT,&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip,val);
@@ -243,7 +246,8 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		for(i=0;i<ctx->z->size1-ctx->skip;i++){
 			double total=0.0;
 			for(j=0;j<ctx->z->size2;j++){
-				total+=abs(gsl_matrix_get(prev,i+ctx->skip,j)-gsl_matrix_get(ctx->z,i+ctx->skip,j));
+				
+				total+=fabs(gsl_matrix_get(prev,i+ctx->skip,j)-gsl_matrix_get(ctx->z,i+ctx->skip,j));
 			}
 			if(change<total) change=total;
 		}
