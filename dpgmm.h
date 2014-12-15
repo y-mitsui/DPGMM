@@ -63,7 +63,7 @@ void dpgmm_release(DPGMM *ctx);
 /*
 	サンプルデータをコンテキストに格納する。
 */
-void dpgmm_add(DPGMM *ctx,double *sample);
+void dpgmm_add(DPGMM *ctx,const double *sample);
 /*
 	事前分布の設定を行う。
 	mean:平均
@@ -85,7 +85,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter);
 	事後確率を求める
 	x:データ
 */
-double dpgmm_prob(DPGMM *ctx,double *x);
+double dpgmm_prob(DPGMM *ctx,const double *x);
 double *dpgmm_getDM(DPGMM *ctx);
 void dpgmm_release(DPGMM *ctx);
 

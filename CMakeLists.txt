@@ -36,10 +36,10 @@ INSTALL(FILES dpgmm.h DESTINATION include)
 
 add_executable (example example.c)
 add_executable (example2 example2.c)
-add_executable (example3 example3.c)
+#add_executable (example3 example3.c)
 target_link_libraries(example dpgmm m -L/usr/local/lib  ${GSL_LIBS})
 target_link_libraries(example2 dpgmm m -L/usr/local/lib  ${GSL_LIBS})
-target_link_libraries(example3 dpgmm m -L/usr/local/lib  ${GSL_LIBS})
+#target_link_libraries(example3 dpgmm m -L/usr/local/lib  ${GSL_LIBS})
 
 set(PNGLIB_NAME dpgmm)
 

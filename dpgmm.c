@@ -48,7 +48,7 @@ void dpgmm_release(DPGMM *ctx){
 	gsl_matrix_free(ctx->z);
 	free(ctx);
 }
-void dpgmm_add(DPGMM *ctx,double *sample){
+void dpgmm_add(DPGMM *ctx,const double *sample){
 	memcpy(&ctx->data[ctx->numData*ctx->dims],sample,sizeof(double)*ctx->dims);
 	ctx->numData++;
 	if((ctx->numData%LIMIT_DATA)==0){
@@ -83,7 +83,7 @@ int dpgmm_setDefaultsPrior(DPGMM *ctx){
 double *dpgmm_getDM(DPGMM *ctx){
 	return ctx->data;
 }
-double dpgmm_prob(DPGMM *ctx,double *x){
+double dpgmm_prob(DPGMM *ctx,const double *x){
 	double ret,stick;
 	int i;
 
