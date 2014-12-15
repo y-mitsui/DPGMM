@@ -38,7 +38,7 @@ void student_t_setDOF(StudentT *ctx,double dof){
 	ctx->dof=dof;
 	ctx->norm=0.0;
 }
-double student_t_prob(StudentT *ctx,double *x){
+double student_t_prob(StudentT *ctx,const double *x){
 	int d = ctx->loc->size,i;
 	gsl_matrix *delta=gsl_matrix_alloc(d,1);
 	gsl_matrix *tmp=gsl_matrix_alloc(d,1);

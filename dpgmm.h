@@ -122,7 +122,7 @@ void student_t_setDOF(StudentT *ctx,double dof);
 void student_t_setLoc(StudentT *ctx,gsl_vector *loc);
 void student_t_setInvScale(StudentT *ctx,gsl_matrix *invScale);
 void student_t_batchProb(StudentT *ctx,double *dm,int numData,double *result);
-double student_t_prob(StudentT *ctx,double *x);
+double student_t_prob(StudentT *ctx,const double *x);
 void student_t_free(StudentT *ctx);
 
 #endif
