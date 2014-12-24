@@ -58,7 +58,8 @@ double student_t_prob(StudentT *ctx,const double *x){
 	gsl_matrix_free(delta);
 	gsl_matrix_free(tmp);
 	gsl_matrix_free(tmp2);
-	return exp(student_t_getLogNorm(ctx) + log(val)*(-0.5*(ctx->dof+d)));
+	double tmp3=log(val)*(-0.5*(ctx->dof+d));
+	return exp(student_t_getLogNorm(ctx) + tmp3);
 }
 void student_t_batchProb(StudentT *ctx,double *dm,int numData,double *result){
 	int d=ctx->loc->size,i,j,k;

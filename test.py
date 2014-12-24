@@ -5,6 +5,7 @@ from gcp.gaussian import Gaussian
 from dpgmm import DPGMM
 import numpy.random
 import time
+from scipy.integrate import quad
 
 dims=2
 numpy.random.seed(1);
