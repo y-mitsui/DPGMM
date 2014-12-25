@@ -59,8 +59,9 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 	for(i=0;i<d;i++){
 		weight_total=0.0;
 		for(j=0;j<numSample;j++){
-			means[i]+=weight[j]*sample[j];
+			means[i]+=weight[j]*sample[j*d+i];
 			weight_total+=weight[j];
+			
 		}
 		means[i]/=weight_total;
 		//printf("means[%d]:%lf\n",i,means[i]);
@@ -87,6 +88,8 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+n);
 		}
 	}
+	puts("ctx->invShape:");
+	gsl_matrix_print(ctx->invShape);
 	ctx->shape=NULL;
 	gsl_vector_mul_constant(delta,num/(ctx->k+num));
 	
@@ -106,13 +109,13 @@ void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
 	gsl_vector_sub(delta,ctx->mu);
 	double tmp=((gp->k*ctx->k)/(gp->k+ctx->k));
 	int i,j;
+	
 	for(i=0;i<ctx->invShape->size1;i++){
 		for(j=0;j<ctx->invShape->size1;j++){
 			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+gsl_matrix_get(gp->invShape,i,j)+tmp);
 		}
 	}
-	/*ctx->invShape+=gp->invShape;
-	ctx->invShape+=((gp->k*ctx->k)/(gp->k+ctx->k));*/
+	
 	ctx->shape=NULL;
 	tmp=gp->k/(ctx->k+gp->k);
 	for(i=0;i<ctx->mu->size;i++){
