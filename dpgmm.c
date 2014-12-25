@@ -182,6 +182,8 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 			gsl_vector_set(ctx->vExpLog,i,gsl_vector_get(ctx->vExpLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,0)));
 			gsl_vector_set(ctx->vExpNegLog,i,gsl_vector_get(ctx->vExpNegLog,i)+gsl_sf_psi(gsl_matrix_get(ctx->v,i,1)));
 		}
+		//puts("1");
+		//gsl_matrix_print(ctx->z);
 		for(i=0;i<ctx->stickCap;i++){
 			gaussian_prior_reset(ctx->n[i]);
 			gaussian_prior_addGP(ctx->n[i],ctx->prior);
@@ -218,11 +220,12 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		for(i=ctx->skip;i<ctx->z->size1;i++){
 			gsl_matrix_set_row(ctx->z,i,expTmp);
 		}
-		
+		//gsl_matrix_print(ctx->z);
 		double *val=malloc(sizeof(double)*(ctx->numData-ctx->skip));
 		for(i=0;i<ctx->stickCap;i++){
 			student_t_batchProb(ctx->nT[i],&dm[ctx->skip*ctx->dims],ctx->numData-ctx->skip,val);
 			for(j=0;j<ctx->numData-ctx->skip;j++){
+				
 				gsl_matrix_set(ctx->z,ctx->skip+j,i,gsl_matrix_get(ctx->z,ctx->skip+j,i)*val[j]);
 			}
 		}
@@ -243,6 +246,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 				gsl_matrix_set(ctx->z,i+ctx->skip,j,gsl_matrix_get(ctx->z,i+ctx->skip,j)/diver[i]);
 			}
 		}
+		//gsl_matrix_print(ctx->z);
 		double change=0.0;
 		for(i=0;i<ctx->z->size1-ctx->skip;i++){
 			double total=0.0;
