@@ -21,7 +21,7 @@ int main(void){
 		sample[0]=x;
 		for(y=0.95;y<1.05;y+=0.001){
 			sample[1]=y;
-			printf("%lf %lf %lf\n",x,y,dpgmm_prob(ctx,sample));
+	//		printf("%lf %lf %lf\n",x,y,dpgmm_prob(ctx,sample));
 		}
 	}
 	return 0;

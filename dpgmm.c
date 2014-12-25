@@ -240,7 +240,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		}
 		for(i=0;i<ctx->z->size1-ctx->skip;i++){
 			for(j=0;j<ctx->z->size2;j++){
-				gsl_matrix_set(ctx->z,i,j,gsl_matrix_get(ctx->z,i+ctx->skip,j)/diver[i]);
+				gsl_matrix_set(ctx->z,i+ctx->skip,j,gsl_matrix_get(ctx->z,i+ctx->skip,j)/diver[i]);
 			}
 		}
 		double change=0.0;
@@ -257,6 +257,7 @@ int dpgmm_solv(DPGMM *ctx,int limitIter){
 		free(diver);
 		free(val);
 		gsl_vector_free(vExpNegLogCum);
+		printf("change:%lf\n",change);
 		if(change<ctx->epsilon) break;
 	}while(++iters<limitIter);
 
