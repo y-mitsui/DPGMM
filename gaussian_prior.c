@@ -54,7 +54,7 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 	double num=sum(weight,numSample);
 	double *means=calloc(1,sizeof(double)*d);
 	double *diff=malloc(sizeof(double)*d);
-	double *scatter=malloc(sizeof(double)*d*d);
+	double *scatter=calloc(1,sizeof(double)*d*d);
 	double weight_total;
 	for(i=0;i<d;i++){
 		weight_total=0.0;
@@ -64,7 +64,6 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 			
 		}
 		means[i]/=weight_total;
-		//printf("means[%d]:%lf\n",i,means[i]);
 	}
 	for(i=0;i<numSample;i++){
 		for(j=0;j<d;j++){
@@ -78,9 +77,12 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 	}
 	
 	gsl_vector *delta=gsl_vector_alloc(d);
+	
 	for(i=0;i<d;i++){
 		gsl_vector_set(delta,i,means[i]-gsl_vector_get(ctx->mu,i));
+		
 	}
+	
 	gsl_matrix *tmp=gsl_vector_outer(delta,delta);
 	for(i=0;i<d;i++){
 		for(j=0;j<d;j++){
@@ -88,8 +90,7 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+n);
 		}
 	}
-	puts("ctx->invShape:");
-	gsl_matrix_print(ctx->invShape);
+	
 	ctx->shape=NULL;
 	gsl_vector_mul_constant(delta,num/(ctx->k+num));
 	
@@ -107,23 +108,25 @@ void gaussian_prior_addSamples(GaussianPrior *ctx,double *sample,int numSample,d
 void gaussian_prior_addGP(GaussianPrior *ctx,GaussianPrior *gp){
 	gsl_vector *delta=gsl_vector_clone(gp->mu);
 	gsl_vector_sub(delta,ctx->mu);
+	gsl_matrix *tmpOuter=gsl_vector_outer(delta,delta);
 	double tmp=((gp->k*ctx->k)/(gp->k+ctx->k));
 	int i,j;
 	
 	for(i=0;i<ctx->invShape->size1;i++){
-		for(j=0;j<ctx->invShape->size1;j++){
-			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+gsl_matrix_get(gp->invShape,i,j)+tmp);
+		for(j=0;j<ctx->invShape->size2;j++){
+			gsl_matrix_set(ctx->invShape,i,j,gsl_matrix_get(ctx->invShape,i,j)+gsl_matrix_get(gp->invShape,i,j)+gsl_matrix_get(tmpOuter,i,j)*tmp);
 		}
 	}
 	
 	ctx->shape=NULL;
 	tmp=gp->k/(ctx->k+gp->k);
 	for(i=0;i<ctx->mu->size;i++){
-		gsl_vector_set(ctx->mu,i,gsl_vector_get(ctx->mu,i)+tmp+gsl_vector_get(delta,i));
+		gsl_vector_set(ctx->mu,i,gsl_vector_get(ctx->mu,i)+tmp*gsl_vector_get(delta,i));
 	}
 	ctx->n += gp->n;
 	ctx->k += gp->k;
 	gsl_vector_free(delta);
+	gsl_matrix_free(tmpOuter);
 }
 void gaussian_prior_addPrior(GaussianPrior *ctx,gsl_vector *mean,gsl_matrix *covariance,double* weight){
 	double weight_const;

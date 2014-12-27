@@ -65,17 +65,15 @@ void student_t_batchProb(StudentT *ctx,double *dm,int numData,double *result){
 	int d=ctx->loc->size,i,j,k;
 	double *delta=malloc(sizeof(double)*numData*d);
 	
-	//gsl_vector_print(ctx->loc);
-	//printf("ctx->dof:%lf\n",ctx->dof);
+	
 	for(i=0;i<numData;i++){
 		for(j=0;j<d;j++){
 			delta[i*d+j]=dm[i*d+j]-gsl_vector_get(ctx->loc,j);
-			
 		}
 	}
-	puts("ctx->invScale:");
-	gsl_matrix_print(ctx->invScale);
-	double *tmp=calloc(1,sizeof(double)*numData*d*d);
+	/*puts("ctx->invScale:");
+	gsl_matrix_print(ctx->invScale);*/
+	double *tmp=calloc(1,sizeof(double)*numData*d);
 	for(i=0;i<numData;i++){
 		for(j=0;j<d;j++){
 			for(k=0;k<d;k++){
@@ -87,8 +85,9 @@ void student_t_batchProb(StudentT *ctx,double *dm,int numData,double *result){
 		for(j=0;j<d;j++){
 			result[i]+=tmp[i*d+j]*delta[i*d+j];
 		}
-		//printf("result[i]:%lf\n",result[i]);
+		//printf("result[%d]:%lf\n",i,result[i]);
 	}
+	//puts("");
 	for(i=0;i<numData;i++){
 		result[i]=1.0+result[i]/ctx->dof;
 	}
