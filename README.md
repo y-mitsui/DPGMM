@@ -30,4 +30,4 @@ This library supported pkg-config.
 
     $ gcc `pkg-config --cflags dpgmm` yourProgram.c `pkg-config --libs dpgmm`
 
-Read dpgmm.h and example.c
+Read dpgmm.h and example2.c
