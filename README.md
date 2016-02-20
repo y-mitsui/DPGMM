@@ -17,7 +17,7 @@ You require cmake and GSL
 
 (2) Input this following on shell.
 
-    $ cmake .     #(Be careful dot.)
+    $ cmake .     
     $ make && sudo make install
 
 (3) Add so searching path /usr/local/lib
